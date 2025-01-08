@@ -1,0 +1,79 @@
+ local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Animation IDs
+local reboundAnimationId = "rbxassetid://13906660677"  -- Rebound Jump Emote
+
+-- Walk speed values
+local normalWalkSpeed = 17
+local jumpWalkSpeed = 5.5
+
+-- Initial JumpHeight
+humanoid.JumpHeight = 7.3
+
+-- Function to handle rebound jump animation
+local function handleReboundJump()
+    local reboundAnimTrack
+
+    humanoid.Jumping:Connect(function()
+        -- Create and play the rebound animation
+        local reboundAnim = Instance.new("Animation")
+        reboundAnim.AnimationId = reboundAnimationId
+        reboundAnimTrack = humanoid:LoadAnimation(reboundAnim)
+
+        reboundAnimTrack:Play()
+        reboundAnimTrack:AdjustSpeed(2.5) -- Adjust animation speed if needed
+
+        -- Set walk speed to 5.5 during the animation
+        humanoid.WalkSpeed = jumpWalkSpeed
+
+        -- Restore normal walk speed when the animation stops
+        reboundAnimTrack.Stopped:Connect(function()
+            humanoid.WalkSpeed = normalWalkSpeed
+        end)
+    end)
+end
+
+-- Function to check basketball presence and update jump settings
+local function updateJumpSettings()
+    local basketball = Workspace:FindFirstChild("Basketball")
+
+    if basketball then
+        -- Calculate the distance between the player and the basketball
+        local distance = (basketball.Position - character.HumanoidRootPart.Position).Magnitude
+
+        -- Adjust UseJumpPower based on distance
+        if distance <= 50 then
+            humanoid.UseJumpPower = false
+        else
+            humanoid.UseJumpPower = true
+        end
+    else
+        -- Enable jump power if no basketball is found
+        humanoid.UseJumpPower = true
+    end
+end
+
+-- Continuously monitor basketball proximity
+task.spawn(function()
+    while true do
+        updateJumpSettings()
+        task.wait(0.1) -- Check every 0.1 seconds
+    end
+end)
+
+-- Set up the jump emote and handle rebound animation
+handleReboundJump()
+
+-- Reapply the functionality if the character respawns
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    handleReboundJump()
+end)
+
+ end
